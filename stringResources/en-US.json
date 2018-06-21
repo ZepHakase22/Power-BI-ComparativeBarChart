@@ -1,0 +1,15 @@
+{
+    "locale": "en-US",
+    "values": {
+        "reference_value": "Reference Value",
+        "reference_value_description":"The value on which to build the reference istogram",
+        "measure_value": "Measure",
+        "measure_value_description": "The value of a quantity to be compared with the reference histogram",
+        "group_by_value": "Group by ...",
+        "group_by_description_value": "Entities to use to group measure",
+        "reference_entity": "Reference Entity Properties",
+        "reference_entity_description": "The entity's properties that represent the reference value",
+        "color_property": "Colors",
+        "colors_property_description": "The color of the reference object"
+    }
+}

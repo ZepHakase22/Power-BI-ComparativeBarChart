@@ -1,0 +1,67 @@
+{
+    "dataRoles": [
+        {
+            "description" :"The value on which to build the reference histogram",
+            "displayName": "Reference Value",
+            "name": "referenceValue",
+            "kind": "Measure"
+        },
+        {
+            "description": "The value of a quantity to be compared with the reference histogram",
+            "displayName": "Measure",
+            "name": "measure",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Group by",
+            "description": "Entities to use to group measure",
+            "name": "groupBy",
+            "kind": "Grouping"
+        }
+    ],
+    "dataViewMappings": [
+        {
+            "conditions": [
+                { "referenceValue": { "max": 1 } }
+            ],
+            "categorical": {
+                "values": {
+                    "group": {
+                        "by": "groupBy",
+                        "select": [
+                            {
+                                "bind": {
+                                    "to": "referenceValue"
+                                }
+                            },
+                            {
+                                "bind": {
+                                    "to": "measure"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "objects": {
+        "xyAxis": {
+            "displayName": "Enable Axes",
+            "properties": {
+                "xAxis": {
+                    "displayName": "x-Axis",
+                    "type": { 
+                        "bool": true 
+                    }
+                },
+                "yAxis": {
+                    "displayName": "y-Axis",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        }
+    }
+}

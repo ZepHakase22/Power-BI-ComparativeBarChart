@@ -1,0 +1,15 @@
+{
+    "locale": "it-IT",
+    "values": {
+        "reference_value": "Valore di riferimento",
+        "reference_value_description":"Il valore su cui costruire l'istogramma di riferimento",
+        "measure_value": "Misurazione",
+        "measure_value_description": "Il valore di una grandezza da confrontare con l'istogramma di riferimento",
+        "group_by_value": "Raggruppa per ...",
+        "group_by_description_value": "Grandezze da usare per il raggruppamento",
+        "reference_entity": "Proprietà entita' di riferimento",
+        "reference_entity_description": "Proprietà visuali dell'entità di riferimento",
+        "color_property": "Colori",
+        "colors_property_description": "Scegli il colore"
+    }
+}
