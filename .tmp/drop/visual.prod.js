@@ -534,6 +534,7 @@ var powerbi;
         (function (visual) {
             var enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA;
             (function (enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA) {
+                ;
                 "use strict";
                 /**
                  * Function that converts queried data into a view model that will be used by the visual.
@@ -553,25 +554,73 @@ var powerbi;
                         },
                     };
                     var viewModel = {
+                        categories: [],
+                        referenceDataPoints: {},
+                        stackDataPoints: {},
                         settings: {}
                     };
                     if (!dataViews
                         || !dataViews[0]
                         || !dataViews[0].categorical
+                        || !dataViews[0].categorical.categories
+                        || !dataViews[0].categorical.categories[0]
                         || !dataViews[0].categorical.values) {
                         return viewModel;
                     }
                     ;
+                    var categorical = dataViews[0].categorical;
+                    var category = categorical.categories[0];
+                    for (var i = 0, cat = []; i < category.values.length; i++) {
+                        for (var j = 0; j < categorical.categories.length; j++) {
+                            cat.push(categorical.categories[j].values[i] + '');
+                        }
+                        viewModel.categories.push(cat);
+                        cat = [];
+                    }
+                    viewModel.referenceDataPoints.values = [];
+                    viewModel.referenceDataPoints.displayName = categorical.values[0].source.displayName;
+                    viewModel.stackDataPoints.values = [];
+                    viewModel.stackDataPoints.displayName = [];
+                    viewModel.stackDataPoints.displayName = categorical.values.filter(function (dv) {
+                        return dv.source.roles['measure'];
+                    }).map(function (dv) {
+                        return dv.source.displayName;
+                    }).filter(function (v, i, k) {
+                        return k.indexOf(v) === i;
+                    });
+                    var colorPalette = host.colorPalette;
                     var objects = dataViews[0].metadata.objects;
-                    var enelBarChartSettings = {
+                    var cbcBarChartSettings = {
                         xyAxis: {
                             xAxis: enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getValue(objects, 'xyAxis', 'xAxis', defaultSettings.xyAxis.xAxis),
                             yAxis: enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getValue(objects, 'xyAxis', 'yAxis', defaultSettings.xyAxis.yAxis)
                         },
                     };
-                    return {
-                        settings: enelBarChartSettings
+                    viewModel.settings = cbcBarChartSettings;
+                    var _loop_1 = function (i, len, cat) {
+                        var dataValues = categorical.values.filter((function (dv) {
+                            return (dv.values.filter(function (v, k) {
+                                return v !== null && k === i;
+                            })).length !== 0;
+                        }));
+                        viewModel.referenceDataPoints.values.push(dataValues.filter(function (dv) {
+                            return dv.source.roles['referenceValue'];
+                        })[0].values[i]);
+                        cat.push(dataValues.filter(function (dv) {
+                            return dv.source.roles['measure'];
+                        }).map(function (dv) {
+                            return dv.values[i];
+                        }));
+                        viewModel.stackDataPoints.values.push(cat);
+                        cat = [];
+                        out_cat_1 = cat;
                     };
+                    var out_cat_1;
+                    for (var i = 0, len = category.values.length, cat = []; i < len; i++) {
+                        _loop_1(i, len, cat);
+                        cat = out_cat_1;
+                    }
+                    return viewModel;
                 }
                 var Visual = (function () {
                     function Visual(options) {
@@ -586,6 +635,7 @@ var powerbi;
                     ;
                     Visual.prototype.update = function (options) {
                         console.log('Visual update ', options);
+                        debugger;
                         var viewModel = data2ViewModel(options, this.host);
                         var settings = this.barCharSettings = viewModel.settings;
                         if (settings !== undefined) {

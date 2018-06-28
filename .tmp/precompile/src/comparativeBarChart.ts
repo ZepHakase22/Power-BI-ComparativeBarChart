@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual {
+module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA  {
     /**
      * Interface for EnelBarChartSettings
      * 
@@ -34,24 +34,53 @@ module powerbi.extensibility.visual {
      *                                                                  - Opacity - Controls opacity of plotted bars, values range between 10 (almost transparent) to 100 (fully opaque, default)
      *                                                                  - Help Button - When TRUE, the plot displays a button which launch a link to documentation.
      */
-    interface EnelBarChartSettings {
+    interface CBCBarChartSettings {
         xyAxis: {
             xAxis: boolean;
             yAxis: boolean;
         };
     }
     /**
-     * Interface for EnelBarChartViewModel
+     * Interface for BarChart data points.
+     *
+     * @interface
+     * @property {string} category          - Corresponding category of data value.
+     * @property {PrimitiveValue[]} value   - Array of values for the reference value.
+     *                                        and visual interaction.
+     */
+    interface ReferenceChartDataPoint {
+        displayName: string;
+        values: PrimitiveValue[];
+    };
+
+        /***
+     * Interface StackChartDataPoint
      * 
      * @interface
-     * @property {EnelBarChartSettings} settings - Manage the settings for the EnelBarChartInterface
+     * @property {BarChartDataPoint[]} dataPoints - Data points array of the measure to compare to the reference
      * 
      */
-    interface EnelBarChartViewModel {
-        settings: EnelBarChartSettings;
+    interface StackChartDataPoint {
+        displayName: string[];
+        values: PrimitiveValue[][];
+    }
+    /**
+     * Interface for CBCBarChartViewModel
+     * 
+     * @interface
+     * @property {BarChartDataPoint} datapoint          - The reference measure
+     * @property {StackChartDataPoint} stackDataPoint   - The measure to compare datapoint with the reference measure 
+     * @property {CBCBarChartSettings} settings         - Manage the settings for the EnelBarChartInterface
+     * 
+     */
+    interface CBCBarChartViewModel {
+        categories: string[][]
+        referenceDataPoints: ReferenceChartDataPoint;
+        stackDataPoints: StackChartDataPoint;
+        settings: CBCBarChartSettings;
     }
     "use strict";
-    
+
     /**
      * Function that converts queried data into a view model that will be used by the visual.
      *
@@ -61,39 +90,79 @@ module powerbi.extensibility.visual {
      *                                        the visual had queried.
      * @param {IVisualHost} host            - Contains references to the host which contains services
      */
-    function data2ViewModel(options:VisualUpdateOptions, host: IVisualHost): EnelBarChartViewModel {
+    function data2ViewModel(options:VisualUpdateOptions, host: IVisualHost): CBCBarChartViewModel {
         let dataViews = options.dataViews;
-        let defaultSettings: EnelBarChartSettings = {
+        
+
+        let defaultSettings: CBCBarChartSettings = {
             xyAxis: {
                 xAxis: false,
                 yAxis: false
             },
         }
-        let viewModel: EnelBarChartViewModel = {
-            settings: <EnelBarChartSettings>{}
+        let viewModel: CBCBarChartViewModel = {
+            categories: [],
+            referenceDataPoints: <ReferenceChartDataPoint>{},
+            stackDataPoints: <StackChartDataPoint>{},
+            settings: <CBCBarChartSettings>{}
         }
         if(     !dataViews
             ||  !dataViews[0]
             ||  !dataViews[0].categorical
+            ||  !dataViews[0].categorical.categories
+            ||  !dataViews[0].categorical.categories[0]
             ||  !dataViews[0].categorical.values) {
                 return viewModel;
         };
         
+        let categorical = dataViews[0].categorical;
+        let category = categorical.categories[0];
+        for (let i=0,cat=[]; i<category.values.length; i++) {
+            for(let j=0; j<categorical.categories.length; j++) {
+                cat.push(categorical.categories[j].values[i] + '');
+            }
+            viewModel.categories.push(cat);
+            cat=[];
+        }
+
+        viewModel.referenceDataPoints.values = [];
+        viewModel.referenceDataPoints.displayName = categorical.values[0].source.displayName;
+        viewModel.stackDataPoints.values = [];
+        viewModel.stackDataPoints.displayName = [];
+        viewModel.stackDataPoints.displayName = categorical.values.filter(dv => 
+            dv.source.roles['measure']).map<string>(dv => 
+                dv.source.displayName).filter( (v,i,k) =>
+                k.indexOf(v) === i);
+        
+        let colorPalette: IColorPalette = host.colorPalette;
+
         let objects = dataViews[0].metadata.objects;
-        let enelBarChartSettings: EnelBarChartSettings = {
+        let cbcBarChartSettings: CBCBarChartSettings = {
             xyAxis: {
                 xAxis: getValue<boolean>(objects, 'xyAxis', 'xAxis', defaultSettings.xyAxis.xAxis),
                 yAxis: getValue<boolean>(objects, 'xyAxis', 'yAxis', defaultSettings.xyAxis.yAxis)
             },
         };
-        return {
-            settings:enelBarChartSettings
+        viewModel.settings = cbcBarChartSettings;
+        for ( let i = 0, len = category.values.length, cat=[] ; i < len; i++) {
+            let dataValues = categorical.values.filter((dv => 
+                (dv.values.filter ((v,k) => 
+                    v!== null && k===i)).length !== 0 ));
+
+            viewModel.referenceDataPoints.values.push(dataValues.filter (dv => 
+                dv.source.roles['referenceValue'])[0].values[i]);
+                cat.push(dataValues.filter (dv => 
+                dv.source.roles['measure']).map<PrimitiveValue>(dv => 
+                    dv.values[i]));
+            viewModel.stackDataPoints.values.push(cat);
+            cat = [];
         }
+        return viewModel;
     }
     export class Visual implements IVisual {
         private target: HTMLElement;
         private host: IVisualHost;
-        private barCharSettings: EnelBarChartSettings
+        private barCharSettings: CBCBarChartSettings
 
         constructor(options: VisualConstructorOptions) {
             console.log('Constructor Debugger')
@@ -109,8 +178,9 @@ module powerbi.extensibility.visual {
 
         public update(options: VisualUpdateOptions) {
             console.log('Visual update ', options);
-            let viewModel: EnelBarChartViewModel = data2ViewModel(options, this.host);
-            let settings: EnelBarChartSettings = this.barCharSettings = viewModel.settings;
+            debugger;
+            let viewModel: CBCBarChartViewModel = data2ViewModel(options, this.host);
+            let settings: CBCBarChartSettings = this.barCharSettings = viewModel.settings;
 
             if(settings !== undefined) {
                 this.target.innerHTML = 

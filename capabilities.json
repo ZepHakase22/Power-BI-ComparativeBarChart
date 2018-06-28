@@ -25,6 +25,11 @@
                 { "referenceValue": { "max": 1 } }
             ],
             "categorical": {
+                "categories": {
+                    "for": {
+                        "in": "groupBy"
+                    }
+                },
                 "values": {
                     "group": {
                         "by": "groupBy",
@@ -62,6 +67,26 @@
                     }
                 }
             }
+        },
+        "colorSelector": {
+            "displayName": "Data Colors",
+            "properties": {
+                "fill": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "sorting": {
+        "default": {
+            
         }
     }
 }
