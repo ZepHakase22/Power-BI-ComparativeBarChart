@@ -20,5 +20,32 @@ module powerbi.extensibility.visual {
         }
         return defaultValue;
     }
+   /**
+     * Gets property value for a particular object in a category.
+     *
+     * @function
+     * @param {DataViewValueColumn} category - List of category objects.
+     * @param {number} index                    - Index of category object.
+     * @param {string} objectName               - Name of desired object.
+     * @param {string} propertyName             - Name of desired property.
+     * @param {T} defaultValue                  - Default value of desired property.
+     */
+    export function getObjectValue<T>(category: DataViewValueColumn, index: number, 
+        objectName: string, propertyName: string, defaultValue: T): T {
+        let categoryObjects = category.source.objects;
 
+        if (categoryObjects) {
+            let categoryObject: DataViewObject = categoryObjects;
+            if (categoryObject) {
+                let object = categoryObject[objectName];
+                if (object) {
+                    let property: T = <T>object[propertyName];
+                    if (property !== undefined) {
+                        return property;
+                    }
+                }
+            }
+        }
+        return defaultValue;
+    }
 }

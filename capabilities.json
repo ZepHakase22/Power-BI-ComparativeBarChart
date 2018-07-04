@@ -85,7 +85,12 @@
         }
     },
     "sorting": {
-        "default": {
+        "implicit": {
+            "clauses": [
+                {
+                    "role": "groupBy", "direction": 1
+                }
+            ]
             
         }
     }

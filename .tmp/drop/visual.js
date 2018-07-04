@@ -597,15 +597,52 @@ var powerbi;
                         },
                     };
                     viewModel.settings = cbcBarChartSettings;
+                    var referenceDefaultColor = {
+                        solid: {
+                            color: colorPalette.getColor(viewModel.referenceDataPoints.displayName).value
+                        }
+                    };
+                    var stackDefaultColor = [];
+                    for (var i = 0; i < viewModel.stackDataPoints.displayName.length; i++) {
+                        var dc = {
+                            solid: {
+                                color: colorPalette.getColor(viewModel.stackDataPoints.displayName[i]).value
+                            }
+                        };
+                        stackDefaultColor.push(dc);
+                    }
+                    var firstTime = true;
                     var _loop_1 = function (i, len, cat) {
                         var dataValues = categorical.values.filter((function (dv) {
                             return (dv.values.filter(function (v, k) {
                                 return v !== null && k === i;
                             })).length !== 0;
                         }));
+                        if (i === 0) {
+                            var referenceDataValue = dataValues.filter(function (dv) {
+                                return dv.source.roles['referenceValue'];
+                            })[0];
+                            viewModel.referenceDataPoints.color = enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getObjectValue(referenceDataValue, 0, 'colorSelector', 'fill', referenceDefaultColor).solid.color;
+                            viewModel.referenceDataPoints.selectionId = host.createSelectionIdBuilder()
+                                .withMeasure(referenceDataValue.source.queryName)
+                                .createSelectionId();
+                        }
                         viewModel.referenceDataPoints.values.push(dataValues.filter(function (dv) {
                             return dv.source.roles['referenceValue'];
                         })[0].values[i]);
+                        if (i == 0) {
+                            var stackDataValues_1 = dataValues.filter(function (dv) {
+                                return dv.source.roles['measure'];
+                            });
+                            viewModel.stackDataPoints.color = stackDataValues_1.map(function (sdv) {
+                                return enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getObjectValue(sdv, 0, 'colorSelector', 'fill', stackDefaultColor[stackDataValues_1.indexOf(sdv)]).solid.color;
+                            });
+                            viewModel.stackDataPoints.selectionId = stackDataValues_1.map(function (sdv) {
+                                return host.createSelectionIdBuilder()
+                                    .withMeasure(sdv.source.queryName)
+                                    .createSelectionId();
+                            });
+                        }
                         cat.push(dataValues.filter(function (dv) {
                             return dv.source.roles['measure'];
                         }).map(function (dv) {
@@ -627,7 +664,7 @@ var powerbi;
                         console.log('Constructor Debugger');
                         this.host = options.host;
                         var captionArea = document.createElement("div");
-                        captionArea.innerHTML = "Flavio è fesso";
+                        captionArea.innerHTML = "<strong>Flavio è fesso</strong>";
                         options.element.appendChild(captionArea);
                         this.target = document.createElement("div");
                         options.element.appendChild(this.target);
@@ -636,11 +673,17 @@ var powerbi;
                     Visual.prototype.update = function (options) {
                         console.log('Visual update ', options);
                         debugger;
-                        var viewModel = data2ViewModel(options, this.host);
-                        var settings = this.barCharSettings = viewModel.settings;
+                        var viewModel = this.cbcChartViewModel = data2ViewModel(options, this.host);
+                        var settings = this.barChartSettings = viewModel.settings;
                         if (settings !== undefined) {
-                            this.target.innerHTML =
-                                "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis;
+                            var baseHTML = "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis +
+                                "</br>color for " + viewModel.referenceDataPoints.displayName + " is: "
+                                + viewModel.referenceDataPoints.color;
+                            var dynamicHTML_1 = "";
+                            var color_1 = viewModel.stackDataPoints.color;
+                            viewModel.stackDataPoints.displayName.forEach(function (dn) { return dynamicHTML_1 += "</br>color for " + dn
+                                + " is: " + color_1[viewModel.stackDataPoints.displayName.indexOf(dn)]; });
+                            this.target.innerHTML = baseHTML + dynamicHTML_1;
                         }
                         else {
                             this.target.innerHTML =
@@ -658,11 +701,39 @@ var powerbi;
                                 objectEnumeration.push({
                                     objectName: objectName,
                                     properties: {
-                                        xAxis: this.barCharSettings.xyAxis.xAxis,
-                                        yAxis: this.barCharSettings.xyAxis.yAxis
+                                        xAxis: this.barChartSettings.xyAxis.xAxis,
+                                        yAxis: this.barChartSettings.xyAxis.yAxis
                                     },
                                     selector: null
                                 });
+                                break;
+                            case 'colorSelector':
+                                objectEnumeration.push({
+                                    objectName: objectName,
+                                    displayName: this.cbcChartViewModel.referenceDataPoints.displayName,
+                                    properties: {
+                                        fill: {
+                                            solid: {
+                                                color: this.cbcChartViewModel.referenceDataPoints.color
+                                            }
+                                        }
+                                    },
+                                    selector: this.cbcChartViewModel.referenceDataPoints.selectionId.getSelector()
+                                });
+                                for (var i = 0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; +i++) {
+                                    objectEnumeration.push({
+                                        objectName: objectName,
+                                        displayName: this.cbcChartViewModel.stackDataPoints.displayName[i],
+                                        properties: {
+                                            fill: {
+                                                solid: {
+                                                    color: this.cbcChartViewModel.stackDataPoints.color[i]
+                                                }
+                                            }
+                                        },
+                                        selector: this.cbcChartViewModel.stackDataPoints.selectionId[i].getSelector()
+                                    });
+                                }
                                 break;
                         }
                         ;
@@ -708,6 +779,33 @@ var powerbi;
                     return defaultValue;
                 }
                 enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getValue = getValue;
+                /**
+                  * Gets property value for a particular object in a category.
+                  *
+                  * @function
+                  * @param {DataViewValueColumn} category - List of category objects.
+                  * @param {number} index                    - Index of category object.
+                  * @param {string} objectName               - Name of desired object.
+                  * @param {string} propertyName             - Name of desired property.
+                  * @param {T} defaultValue                  - Default value of desired property.
+                  */
+                function getObjectValue(category, index, objectName, propertyName, defaultValue) {
+                    var categoryObjects = category.source.objects;
+                    if (categoryObjects) {
+                        var categoryObject = categoryObjects;
+                        if (categoryObject) {
+                            var object = categoryObject[objectName];
+                            if (object) {
+                                var property = object[propertyName];
+                                if (property !== undefined) {
+                                    return property;
+                                }
+                            }
+                        }
+                    }
+                    return defaultValue;
+                }
+                enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getObjectValue = getObjectValue;
             })(enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA || (visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = {}));
         })(visual = extensibility.visual || (extensibility.visual = {}));
     })(extensibility = powerbi.extensibility || (powerbi.extensibility = {}));

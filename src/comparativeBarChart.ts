@@ -25,6 +25,7 @@
  */
 
 module powerbi.extensibility.visual {
+    import ISelectionId = powerbi.visuals.ISelectionId;
     /**
      * Interface for EnelBarChartSettings
      * 
@@ -50,7 +51,9 @@ module powerbi.extensibility.visual {
      */
     interface ReferenceChartDataPoint {
         displayName: string;
+        color: string;
         values: PrimitiveValue[];
+        selectionId: ISelectionId;
     };
 
         /***
@@ -62,7 +65,9 @@ module powerbi.extensibility.visual {
      */
     interface StackChartDataPoint {
         displayName: string[];
+        color: string[];
         values: PrimitiveValue[][];
+        selectionId: ISelectionId[];
     }
     /**
      * Interface for CBCBarChartViewModel
@@ -144,14 +149,53 @@ module powerbi.extensibility.visual {
             },
         };
         viewModel.settings = cbcBarChartSettings;
+        let referenceDefaultColor: Fill = {
+            solid: {
+                color: colorPalette.getColor(viewModel.referenceDataPoints.displayName).value
+            }
+        }
+        let stackDefaultColor: Fill[] = []
+
+        for(let i=0; i < viewModel.stackDataPoints.displayName.length; i++) {
+            let dc: Fill =  {
+                solid: {
+                    color: colorPalette.getColor(viewModel.stackDataPoints.displayName[i]).value
+                }
+            }
+            stackDefaultColor.push(dc);
+        }
+        let firstTime: boolean = true;
+
         for ( let i = 0, len = category.values.length, cat=[] ; i < len; i++) {
             let dataValues = categorical.values.filter((dv => 
                 (dv.values.filter ((v,k) => 
                     v!== null && k===i)).length !== 0 ));
 
+            if (i===0) {
+                let referenceDataValue: DataViewValueColumn = dataValues.filter (dv => 
+                    dv.source.roles['referenceValue'])[0];
+                viewModel.referenceDataPoints.color = getObjectValue(referenceDataValue,0,'colorSelector','fill'
+                    ,referenceDefaultColor).solid.color;
+                viewModel.referenceDataPoints.selectionId = host.createSelectionIdBuilder()
+                    .withMeasure(referenceDataValue.source.queryName)
+                    .createSelectionId();
+            }
+                
             viewModel.referenceDataPoints.values.push(dataValues.filter (dv => 
-                dv.source.roles['referenceValue'])[0].values[i]);
-                cat.push(dataValues.filter (dv => 
+                dv.source.roles['referenceValue'])[0].values[i]);   
+
+            if(i==0) {
+                let stackDataValues: DataViewValueColumn[] = dataValues.filter( dv =>
+                    dv.source.roles['measure']);
+                viewModel.stackDataPoints.color = stackDataValues.map(sdv =>
+                getObjectValue(sdv,0,'colorSelector','fill',stackDefaultColor[stackDataValues.indexOf(sdv)]).solid.color)
+                viewModel.stackDataPoints.selectionId = stackDataValues.map(sdv => 
+                    host.createSelectionIdBuilder()
+                        .withMeasure(sdv.source.queryName)
+                        .createSelectionId());
+            }
+
+            cat.push(dataValues.filter (dv => 
                 dv.source.roles['measure']).map<PrimitiveValue>(dv => 
                     dv.values[i]));
             viewModel.stackDataPoints.values.push(cat);
@@ -162,7 +206,8 @@ module powerbi.extensibility.visual {
     export class Visual implements IVisual {
         private target: HTMLElement;
         private host: IVisualHost;
-        private barCharSettings: CBCBarChartSettings
+        private barChartSettings: CBCBarChartSettings
+        private cbcChartViewModel: CBCBarChartViewModel
 
         constructor(options: VisualConstructorOptions) {
             console.log('Constructor Debugger')
@@ -170,7 +215,7 @@ module powerbi.extensibility.visual {
             this.host = options.host;
 
             var captionArea = document.createElement("div");
-            captionArea.innerHTML = "Flavio è fesso";
+            captionArea.innerHTML = "<strong>Flavio è fesso</strong>";
             options.element.appendChild(captionArea);
             this.target = document.createElement("div");
             options.element.appendChild(this.target);
@@ -179,15 +224,28 @@ module powerbi.extensibility.visual {
         public update(options: VisualUpdateOptions) {
             console.log('Visual update ', options);
             debugger;
-            let viewModel: CBCBarChartViewModel = data2ViewModel(options, this.host);
-            let settings: CBCBarChartSettings = this.barCharSettings = viewModel.settings;
+            let viewModel: CBCBarChartViewModel = this.cbcChartViewModel = data2ViewModel(options, this.host);
+            let settings: CBCBarChartSettings = this.barChartSettings = viewModel.settings;
 
             if(settings !== undefined) {
-                this.target.innerHTML = 
-                "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis;
+                let baseHTML = "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis +
+                "</br>color for " + viewModel.referenceDataPoints.displayName + " is: " 
+                    + viewModel.referenceDataPoints.color;
+                
+                let dynamicHTML: string = ""
+                let color = viewModel.stackDataPoints.color;
+
+                viewModel.stackDataPoints.displayName.forEach(dn => dynamicHTML += "</br>color for " + dn
+                    + " is: " + color[viewModel.stackDataPoints.displayName.indexOf(dn)]);
+                
+                let dataHTML: string = "";
+
+                let captionHTML: string = "";
+
+                this.target.innerHTML = baseHTML + dynamicHTML;
             } else {
                 this.target.innerHTML =
-                "xy-axis are undefined";
+                "data are undefined";
             }
 
         };
@@ -203,12 +261,42 @@ module powerbi.extensibility.visual {
                 objectEnumeration.push({
                   objectName: objectName,
                   properties: {
-                    xAxis: this.barCharSettings.xyAxis.xAxis,
-                    yAxis: this.barCharSettings.xyAxis.yAxis
+                    xAxis: this.barChartSettings.xyAxis.xAxis,
+                    yAxis: this.barChartSettings.xyAxis.yAxis
                   },
                   selector: null
                 });
                 break;
+
+                case 'colorSelector':
+                objectEnumeration.push({
+                    objectName: objectName,
+                    displayName: this.cbcChartViewModel.referenceDataPoints.displayName,
+                    properties: {
+                        fill: {
+                            solid: {
+                                color: this.cbcChartViewModel.referenceDataPoints.color
+                            }
+                        }
+                    },
+                    selector: this.cbcChartViewModel.referenceDataPoints.selectionId.getSelector()
+                });
+                for(let i=0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; + i++) {
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: this.cbcChartViewModel.stackDataPoints.displayName[i],
+                        properties: {
+                            fill: {
+                                solid: {
+                                    color: this.cbcChartViewModel.stackDataPoints.color[i]
+                                }
+                            }
+                        },
+                        selector: this.cbcChartViewModel.stackDataPoints.selectionId[i].getSelector()
+                    });
+                }
+                break;
+
             };
         
             return objectEnumeration;
