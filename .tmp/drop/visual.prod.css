@@ -1,8 +1,27 @@
 .visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG p {
-  font-size: 20px;
+  font-size: 40px;
   font-weight: bold;
 }
-.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG p em {
-  background: yellow;
-  padding: 5px;
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView {
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView td,
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+.visual-enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA_DEBUG table.tableView tr:hover {
+  background-color: #ddd;
 }

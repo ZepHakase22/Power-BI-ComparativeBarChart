@@ -42,6 +42,18 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
         };
     }
     /**
+     * Interface for categories
+     * 
+     * @interface
+     * @property {string[]} displayNames - The name of the category to put on the x-axis 
+     * @property {string[][]} values - The values of the categories
+     */
+    interface CBCCategories {
+        displayNames: string[];
+        values: string[][];
+    }
+
+    /**
      * Interface for BarChart data points.
      *
      * @interface
@@ -73,13 +85,14 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
      * Interface for CBCBarChartViewModel
      * 
      * @interface
-     * @property {BarChartDataPoint} datapoint          - The reference measure
+     * @property {CBCCategories} categories             - The cate
+     * @property {BarChartDataPoint} referenceDatapoint - The reference measure
      * @property {StackChartDataPoint} stackDataPoint   - The measure to compare datapoint with the reference measure 
      * @property {CBCBarChartSettings} settings         - Manage the settings for the EnelBarChartInterface
      * 
      */
-    interface CBCBarChartViewModel {
-        categories: string[][]
+    export interface CBCBarChartViewModel {
+        categories: CBCCategories;
         referenceDataPoints: ReferenceChartDataPoint;
         stackDataPoints: StackChartDataPoint;
         settings: CBCBarChartSettings;
@@ -106,7 +119,7 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
             },
         }
         let viewModel: CBCBarChartViewModel = {
-            categories: [],
+            categories: <CBCCategories>{},
             referenceDataPoints: <ReferenceChartDataPoint>{},
             stackDataPoints: <StackChartDataPoint>{},
             settings: <CBCBarChartSettings>{}
@@ -122,11 +135,13 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
         
         let categorical = dataViews[0].categorical;
         let category = categorical.categories[0];
+        viewModel.categories.values = [];
+        viewModel.categories.displayNames = categorical.categories.map(c => c.source.displayName);
         for (let i=0,cat=[]; i<category.values.length; i++) {
             for(let j=0; j<categorical.categories.length; j++) {
                 cat.push(categorical.categories[j].values[i] + '');
             }
-            viewModel.categories.push(cat);
+            viewModel.categories.values.push(cat);
             cat=[];
         }
 
@@ -208,17 +223,13 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
         private host: IVisualHost;
         private barChartSettings: CBCBarChartSettings
         private cbcChartViewModel: CBCBarChartViewModel
+        private cbcElement: HTMLElement;
 
         constructor(options: VisualConstructorOptions) {
             console.log('Constructor Debugger')
             
             this.host = options.host;
-
-            var captionArea = document.createElement("div");
-            captionArea.innerHTML = "<strong>Flavio è fesso</strong>";
-            options.element.appendChild(captionArea);
-            this.target = document.createElement("div");
-            options.element.appendChild(this.target);
+            this.cbcElement = options.element;
         };
 
         public update(options: VisualUpdateOptions) {
@@ -227,22 +238,18 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
             let viewModel: CBCBarChartViewModel = this.cbcChartViewModel = data2ViewModel(options, this.host);
             let settings: CBCBarChartSettings = this.barChartSettings = viewModel.settings;
 
-            if(settings !== undefined) {
-                let baseHTML = "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis +
-                "</br>color for " + viewModel.referenceDataPoints.displayName + " is: " 
-                    + viewModel.referenceDataPoints.color;
-                
-                let dynamicHTML: string = ""
-                let color = viewModel.stackDataPoints.color;
+            let tv:tableView = new tableView(viewModel);
 
-                viewModel.stackDataPoints.displayName.forEach(dn => dynamicHTML += "</br>color for " + dn
-                    + " is: " + color[viewModel.stackDataPoints.displayName.indexOf(dn)]);
-                this.target.innerHTML = baseHTML + dynamicHTML;
-            } else {
-                this.target.innerHTML =
-                "xy-axis are undefined";
+            tv.loadBody();
+
+            this.target = tv.getTable();
+            var n = this.cbcElement.firstElementChild;
+            if(n === null)
+                this.cbcElement.appendChild(this.target);
+            else {
+                n.parentNode.replaceChild(n,this.target);
             }
-
+//            const self:this =this;
         };
 
         public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
@@ -276,7 +283,7 @@ module powerbi.extensibility.visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA
                     },
                     selector: this.cbcChartViewModel.referenceDataPoints.selectionId.getSelector()
                 });
-                for(let i=0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; + i++) {
+                for(let i=0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; i++) {
                     objectEnumeration.push({
                         objectName: objectName,
                         displayName: this.cbcChartViewModel.stackDataPoints.displayName[i],

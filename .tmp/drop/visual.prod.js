@@ -554,7 +554,7 @@ var powerbi;
                         },
                     };
                     var viewModel = {
-                        categories: [],
+                        categories: {},
                         referenceDataPoints: {},
                         stackDataPoints: {},
                         settings: {}
@@ -570,11 +570,13 @@ var powerbi;
                     ;
                     var categorical = dataViews[0].categorical;
                     var category = categorical.categories[0];
+                    viewModel.categories.values = [];
+                    viewModel.categories.displayNames = categorical.categories.map(function (c) { return c.source.displayName; });
                     for (var i = 0, cat = []; i < category.values.length; i++) {
                         for (var j = 0; j < categorical.categories.length; j++) {
                             cat.push(categorical.categories[j].values[i] + '');
                         }
-                        viewModel.categories.push(cat);
+                        viewModel.categories.values.push(cat);
                         cat = [];
                     }
                     viewModel.referenceDataPoints.values = [];
@@ -663,11 +665,7 @@ var powerbi;
                     function Visual(options) {
                         console.log('Constructor Debugger');
                         this.host = options.host;
-                        var captionArea = document.createElement("div");
-                        captionArea.innerHTML = "<strong>Flavio è fesso</strong>";
-                        options.element.appendChild(captionArea);
-                        this.target = document.createElement("div");
-                        options.element.appendChild(this.target);
+                        this.cbcElement = options.element;
                     }
                     ;
                     Visual.prototype.update = function (options) {
@@ -675,20 +673,16 @@ var powerbi;
                         debugger;
                         var viewModel = this.cbcChartViewModel = data2ViewModel(options, this.host);
                         var settings = this.barChartSettings = viewModel.settings;
-                        if (settings !== undefined) {
-                            var baseHTML = "x-axis is " + settings.xyAxis.xAxis + "</br> y-axis is " + settings.xyAxis.yAxis +
-                                "</br>color for " + viewModel.referenceDataPoints.displayName + " is: "
-                                + viewModel.referenceDataPoints.color;
-                            var dynamicHTML_1 = "";
-                            var color_1 = viewModel.stackDataPoints.color;
-                            viewModel.stackDataPoints.displayName.forEach(function (dn) { return dynamicHTML_1 += "</br>color for " + dn
-                                + " is: " + color_1[viewModel.stackDataPoints.displayName.indexOf(dn)]; });
-                            this.target.innerHTML = baseHTML + dynamicHTML_1;
-                        }
+                        var tv = new enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.tableView(viewModel);
+                        tv.loadBody();
+                        this.target = tv.getTable();
+                        var n = this.cbcElement.firstElementChild;
+                        if (n === null)
+                            this.cbcElement.appendChild(this.target);
                         else {
-                            this.target.innerHTML =
-                                "xy-axis are undefined";
+                            n.parentNode.replaceChild(n, this.target);
                         }
+                        //            const self:this =this;
                     };
                     ;
                     Visual.prototype.enumerateObjectInstances = function (options) {
@@ -720,7 +714,7 @@ var powerbi;
                                     },
                                     selector: this.cbcChartViewModel.referenceDataPoints.selectionId.getSelector()
                                 });
-                                for (var i = 0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; +i++) {
+                                for (var i = 0; i < this.cbcChartViewModel.stackDataPoints.displayName.length; i++) {
                                     objectEnumeration.push({
                                         objectName: objectName,
                                         displayName: this.cbcChartViewModel.stackDataPoints.displayName[i],
@@ -806,6 +800,67 @@ var powerbi;
                     return defaultValue;
                 }
                 enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.getObjectValue = getObjectValue;
+            })(enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA || (visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = {}));
+        })(visual = extensibility.visual || (extensibility.visual = {}));
+    })(extensibility = powerbi.extensibility || (powerbi.extensibility = {}));
+})(powerbi || (powerbi = {}));
+var powerbi;
+(function (powerbi) {
+    var extensibility;
+    (function (extensibility) {
+        var visual;
+        (function (visual) {
+            var enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA;
+            (function (enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA) {
+                var tableView = (function () {
+                    function tableView(viewModel) {
+                        this.viewModel = viewModel;
+                        this.table = document.createElement("table");
+                        this.table.className = "tableView";
+                        this.thead = this.table.createTHead();
+                        this.tbody = this.table.createTBody();
+                        var headRow = this.thead.insertRow(0);
+                        this.viewModel.categories.displayNames.forEach(function (el) {
+                            var th = document.createElement("th");
+                            th.innerHTML = el;
+                            headRow.appendChild(th);
+                        });
+                        var th = document.createElement("th");
+                        th.innerHTML = viewModel.referenceDataPoints.displayName;
+                        headRow.appendChild(th);
+                        this.viewModel.stackDataPoints.displayName.forEach(function (el) {
+                            var th = document.createElement("th");
+                            th.innerHTML = el;
+                            headRow.appendChild(th);
+                        });
+                    }
+                    tableView.prototype.getTable = function () {
+                        return this.table;
+                    };
+                    tableView.prototype.loadBody = function () {
+                        var _this = this;
+                        var bodyRow;
+                        var i = 0;
+                        this.viewModel.categories.values.forEach(function (row) {
+                            bodyRow = _this.tbody.insertRow(-1);
+                            row.forEach(function (cell) {
+                                var td = bodyRow.insertCell(-1);
+                                td.innerHTML = cell + "";
+                            });
+                            var td = bodyRow.insertCell(-1);
+                            td.innerHTML = _this.viewModel.referenceDataPoints.values[i] + "";
+                            _this.viewModel.stackDataPoints.values[i].forEach(function (cell) {
+                                for (var j = 0; j < cell["length"]; j++) {
+                                    var td_1 = bodyRow.insertCell(-1);
+                                    td_1.innerHTML = cell[j] + "";
+                                }
+                            });
+                            i++;
+                        });
+                    };
+                    return tableView;
+                }());
+                enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA.tableView = tableView;
             })(enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA || (visual.enelBarChartEBEB93C31AAC4EC2BE2A4236ECFF9DCA = {}));
         })(visual = extensibility.visual || (extensibility.visual = {}));
     })(extensibility = powerbi.extensibility || (powerbi.extensibility = {}));
